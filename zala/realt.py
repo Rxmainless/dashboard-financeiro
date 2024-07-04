@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 import mplcursors
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget,
-    QComboBox, QLabel, QScrollArea, QHBoxLayout, QFileDialog, QTabWidget,
-    QFormLayout, QLineEdit, QGridLayout, QSizePolicy
+    QComboBox, QLabel, QScrollArea, QFileDialog, QTabWidget, QGridLayout, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -42,6 +41,7 @@ class MainWindow(QMainWindow):
         self.dashboard_layout = QVBoxLayout(self.dashboard_tab)
         self.dashboard_layout.setAlignment(Qt.AlignCenter)
 
+        # Layout de filtros
         self.filter_layout = QGridLayout()
         self.filter_layout.setAlignment(Qt.AlignCenter)
         self.status_filter = QComboBox()
@@ -58,6 +58,7 @@ class MainWindow(QMainWindow):
         self.filter_layout.addWidget(self.filter_button, 2, 0, 1, 2)
         self.dashboard_layout.addLayout(self.filter_layout)
 
+        # Botões de carregamento e exportação
         self.button_load = QPushButton("Carregar Planilha")
         self.button_load.clicked.connect(self.load_file)
         self.dashboard_layout.addWidget(self.button_load, alignment=Qt.AlignCenter)
@@ -66,6 +67,7 @@ class MainWindow(QMainWindow):
         self.button_export.clicked.connect(self.export_data)
         self.dashboard_layout.addWidget(self.button_export, alignment=Qt.AlignCenter)
 
+        # Área de scroll para gráficos
         self.scroll_area = QScrollArea()
         self.scroll_area_widget = QWidget()
         self.scroll_area.setWidget(self.scroll_area_widget)
@@ -73,6 +75,7 @@ class MainWindow(QMainWindow):
         self.scroll_layout = QVBoxLayout(self.scroll_area_widget)
         self.dashboard_layout.addWidget(self.scroll_area)
 
+        # Configuração do gráfico
         self.figure, self.ax = plt.subplots()
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -109,11 +112,14 @@ class MainWindow(QMainWindow):
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(self, "Carregar Planilha", "", "CSV Files (*.csv);;Excel Files (*.xlsx; *.xls)", options=options)
         if file_path:
-            if file_path.endswith('.csv'):
-                self.data = pd.read_csv(file_path)
-            else:
-                self.data = pd.read_excel(file_path)
-            self.load_data()
+            try:
+                if file_path.endswith('.csv'):
+                    self.data = pd.read_csv(file_path)
+                else:
+                    self.data = pd.read_excel(file_path)
+                self.load_data()
+            except Exception as e:
+                print(f"Erro ao carregar arquivo: {e}")
 
     def load_data(self):
         if self.data.empty:
@@ -144,12 +150,15 @@ class MainWindow(QMainWindow):
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getSaveFileName(self, "Salvar Dados", "", "CSV Files (*.csv);;Excel Files (*.xlsx);;PNG Files (*.png);;JPEG Files (*.jpg);;PDF Files (*.pdf)", options=options)
         if file_path:
-            if file_path.endswith('.csv'):
-                self.data.to_csv(file_path, index=False)
-            elif file_path.endswith('.xlsx') or file_path.endswith('.xls'):
-                self.data.to_excel(file_path, index=False)
-            elif file_path.endswith('.png') or file_path.endswith('.jpg') or file_path.endswith('.pdf'):
-                self.figure.savefig(file_path)
+            try:
+                if file_path.endswith('.csv'):
+                    self.data.to_csv(file_path, index=False)
+                elif file_path.endswith('.xlsx') or file_path.endswith('.xls'):
+                    self.data.to_excel(file_path, index=False)
+                elif file_path.endswith('.png') or file_path.endswith('.jpg') or file_path.endswith('.pdf'):
+                    self.figure.savefig(file_path)
+            except Exception as e:
+                print(f"Erro ao exportar arquivo: {e}")
 
     def save_settings(self):
         settings = {
@@ -159,17 +168,23 @@ class MainWindow(QMainWindow):
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getSaveFileName(self, "Salvar Configurações", "", "JSON Files (*.json)", options=options)
         if file_path:
-            with open(file_path, 'w') as f:
-                pd.Series(settings).to_json(f)
+            try:
+                with open(file_path, 'w') as f:
+                    pd.Series(settings).to_json(f)
+            except Exception as e:
+                print(f"Erro ao salvar configurações: {e}")
 
     def load_settings(self):
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(self, "Carregar Configurações", "", "JSON Files (*.json)", options=options)
         if file_path:
-            settings = pd.read_json(file_path, typ='series')
-            self.status_filter.setCurrentText(settings['status'])
-            self.product_filter.setCurrentText(settings['product'])
-            self.load_data()
+            try:
+                settings = pd.read_json(file_path, typ='series')
+                self.status_filter.setCurrentText(settings['status'])
+                self.product_filter.setCurrentText(settings['product'])
+                self.load_data()
+            except Exception as e:
+                print(f"Erro ao carregar configurações: {e}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
